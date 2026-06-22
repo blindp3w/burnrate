@@ -51,26 +51,26 @@ check('aabb: disjoint on y', !aabbOverlap({ x: 0, y: 0, w: 10, h: 10 }, { x: 0, 
 check('aabb: touching edges is not overlap', !aabbOverlap({ x: 0, y: 0, w: 10, h: 10 }, { x: 10, y: 0, w: 10, h: 10 }));
 
 // --- playerHitbox -----------------------------------------------------------
-const standing = playerHitbox({ x: CONFIG.playerX, width: CONFIG.playerWidth, jumpOffset: 0, sliding: false }, G);
-const sliding = playerHitbox({ x: CONFIG.playerX, width: CONFIG.playerWidth, jumpOffset: 0, sliding: true }, G);
+const standing = playerHitbox({ x: CONFIG.playerX, width: CONFIG.playerWidth, jumpOffset: 0, sitting: false }, G);
+const sittingBox = playerHitbox({ x: CONFIG.playerX, width: CONFIG.playerWidth, jumpOffset: 0, sitting: true }, G);
 check('hitbox: standing uses standHeight', standing.h === CONFIG.standHeight);
-check('hitbox: sliding uses slideHeight', sliding.h === CONFIG.slideHeight);
+check('hitbox: sitting uses slideHeight', sittingBox.h === CONFIG.slideHeight);
 check('hitbox: standing rests on ground', approx(standing.y + standing.h, G));
-check('hitbox: sliding rests on ground', approx(sliding.y + sliding.h, G));
-check('hitbox: slide body is shorter than stand', sliding.h < standing.h);
+check('hitbox: sitting rests on ground', approx(sittingBox.y + sittingBox.h, G));
+check('hitbox: sitting body is shorter than stand', sittingBox.h < standing.h);
 
 // --- collision: BARRIER (must jump over) ------------------------------------
 // Place a barrier directly under the player's x.
 const barrier = { type: BARRIER, x: CONFIG.playerX + 2 };
 check(
   'collision: standing player hits barrier',
-  checkCollision({ x: CONFIG.playerX, width: CONFIG.playerWidth, jumpOffset: 0, sliding: false }, [barrier], G)
+  checkCollision({ x: CONFIG.playerX, width: CONFIG.playerWidth, jumpOffset: 0, sitting: false }, [barrier], G)
 );
 // A jump higher than the barrier should clear it.
 check(
   'collision: high jump clears barrier',
   !checkCollision(
-    { x: CONFIG.playerX, width: CONFIG.playerWidth, jumpOffset: CONFIG.barrierHeight + 10, sliding: false },
+    { x: CONFIG.playerX, width: CONFIG.playerWidth, jumpOffset: CONFIG.barrierHeight + 10, sitting: false },
     [barrier],
     G
   )
@@ -79,7 +79,7 @@ check(
 check(
   'collision: tiny hop still hits barrier',
   checkCollision(
-    { x: CONFIG.playerX, width: CONFIG.playerWidth, jumpOffset: CONFIG.barrierHeight - 20, sliding: false },
+    { x: CONFIG.playerX, width: CONFIG.playerWidth, jumpOffset: CONFIG.barrierHeight - 20, sitting: false },
     [barrier],
     G
   )
@@ -89,22 +89,22 @@ check(
 const overpass = { type: OVERPASS, x: CONFIG.playerX + 2 };
 check(
   'collision: standing player hits overpass',
-  checkCollision({ x: CONFIG.playerX, width: CONFIG.playerWidth, jumpOffset: 0, sliding: false }, [overpass], G)
+  checkCollision({ x: CONFIG.playerX, width: CONFIG.playerWidth, jumpOffset: 0, sitting: false }, [overpass], G)
 );
 check(
-  'collision: sliding player clears overpass',
-  !checkCollision({ x: CONFIG.playerX, width: CONFIG.playerWidth, jumpOffset: 0, sliding: true }, [overpass], G)
+  'collision: sitting player clears overpass',
+  !checkCollision({ x: CONFIG.playerX, width: CONFIG.playerWidth, jumpOffset: 0, sitting: true }, [overpass], G)
 );
 // Jumping into an overpass is fatal (you rise into the cables).
 check(
   'collision: jumping into overpass collides',
-  checkCollision({ x: CONFIG.playerX, width: CONFIG.playerWidth, jumpOffset: 40, sliding: false }, [overpass], G)
+  checkCollision({ x: CONFIG.playerX, width: CONFIG.playerWidth, jumpOffset: 40, sitting: false }, [overpass], G)
 );
 
 // --- collision: x separation ------------------------------------------------
 check(
   'collision: obstacle far ahead does not collide',
-  !checkCollision({ x: CONFIG.playerX, width: CONFIG.playerWidth, jumpOffset: 0, sliding: false }, [{ type: BARRIER, x: CONFIG.playerX + 600 }], G)
+  !checkCollision({ x: CONFIG.playerX, width: CONFIG.playerWidth, jumpOffset: 0, sitting: false }, [{ type: BARRIER, x: CONFIG.playerX + 600 }], G)
 );
 
 // Sanity on obstacleBox geometry: overpass leaves exactly overpassGap of clearance.
@@ -158,17 +158,17 @@ check('score: never negative', scoreFromDistance(-50) === 0);
 check('ember: addEmberlight default increment', addEmberlight(0) === CONFIG.moteValue);
 check('ember: addEmberlight accumulates', addEmberlight(addEmberlight(5, 2), 3) === 10);
 check('ember: collectsMote true when overlapping body', collectsMote(
-  { x: CONFIG.playerX, width: CONFIG.playerWidth, jumpOffset: 0, sliding: false },
+  { x: CONFIG.playerX, width: CONFIG.playerWidth, jumpOffset: 0, sitting: false },
   { x: CONFIG.playerX + CONFIG.playerWidth / 2, y: G - CONFIG.standHeight / 2, r: CONFIG.moteRadius },
   G
 ));
 check('ember: collectsMote false when far away', !collectsMote(
-  { x: CONFIG.playerX, width: CONFIG.playerWidth, jumpOffset: 0, sliding: false },
+  { x: CONFIG.playerX, width: CONFIG.playerWidth, jumpOffset: 0, sitting: false },
   { x: CONFIG.playerX + 800, y: G - 200, r: CONFIG.moteRadius },
   G
 ));
 check('ember: collectsMote true when mote just touches edge within radius', collectsMote(
-  { x: CONFIG.playerX, width: CONFIG.playerWidth, jumpOffset: 0, sliding: false },
+  { x: CONFIG.playerX, width: CONFIG.playerWidth, jumpOffset: 0, sitting: false },
   { x: CONFIG.playerX + CONFIG.playerWidth + 10, y: G - CONFIG.standHeight / 2, r: CONFIG.moteRadius },
   G
 ));

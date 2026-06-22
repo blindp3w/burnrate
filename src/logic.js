@@ -40,7 +40,6 @@ export const CONFIG = {
   // Jump arc.
   jumpVelocity: 1180, // initial upward speed (units/s)
   gravity: 3200, // downward acceleration (units/s^2)
-  slideDuration: 0.62, // seconds a slide lasts
 
   // Air control (one mid-air boost per jump; fast-fall to land quicker).
   airBoostVelocity: 760, // upward impulse added by a mid-air boost
@@ -72,10 +71,10 @@ export function aabbOverlap(a, b) {
 }
 
 // Compute the player's current collision rectangle.
-// `player` carries: x, width, jumpOffset (>=0, height above ground), sliding.
-// While sliding the body is shorter, letting it clear an OVERPASS.
+// `player` carries: x, width, jumpOffset (>=0, height above ground), sitting.
+// While sitting the body is shorter, letting it clear an OVERPASS.
 export function playerHitbox(player, groundY = WORLD.groundY) {
-  const h = player.sliding ? CONFIG.slideHeight : CONFIG.standHeight;
+  const h = player.sitting ? CONFIG.slideHeight : CONFIG.standHeight;
   const bottom = groundY - (player.jumpOffset || 0);
   return {
     x: player.x,

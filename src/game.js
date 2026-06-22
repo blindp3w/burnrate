@@ -79,8 +79,7 @@ function freshGame() {
       jumpOffset: 0,
       vy: 0,
       onGround: true,
-      sliding: false,
-      slideTimer: 0,
+      sitting: false,
       airBoostUsed: false,
     },
     obstacles: [],
@@ -157,10 +156,7 @@ function update(dt) {
       p.onGround = true;
     }
   }
-  if (p.sliding) {
-    p.slideTimer -= dt;
-    if (p.slideTimer <= 0) p.sliding = false;
-  }
+  // Sitting is a held state; it persists until the player stands up.
 
   // Spawn obstacles on the speed-driven cadence.
   game.spawnTimer += dt;
@@ -253,30 +249,32 @@ function updateParticles(dt) {
 
 // --- Actions -----------------------------------------------------------------
 function jump() {
-  if (phase !== STATE.RUNNING) return;
   const p = game.player;
-  if (p.onGround) {
+  if (p.onGround && !p.sitting) {
     p.onGround = false;
     p.vy = CONFIG.jumpVelocity;
-    p.sliding = false; // jumping cancels a slide
     p.airBoostUsed = false; // a fresh jump grants a new mid-air boost
     audio.jump();
   }
 }
 
-function slide() {
-  if (phase !== STATE.RUNNING) return;
+// Sit down: a held crouch on the ground (clears OVERPASS cables). Persists
+// until the player stands up.
+function sitDown() {
   const p = game.player;
-  if (p.onGround && !p.sliding) {
-    p.sliding = true;
-    p.slideTimer = CONFIG.slideDuration;
+  if (p.onGround && !p.sitting) {
+    p.sitting = true;
     audio.slide();
   }
 }
 
-// Mid-air boost: swipe up / Up key while airborne, once per jump.
+function standUp() {
+  const p = game.player;
+  if (p.sitting) p.sitting = false;
+}
+
+// Mid-air boost: airborne only, once per jump.
 function airBoost() {
-  if (phase !== STATE.RUNNING) return;
   const p = game.player;
   const res = applyAirBoost(p, CONFIG);
   if (!res) return;
@@ -286,14 +284,29 @@ function airBoost() {
   spawnBoostSparks();
 }
 
-// Fast-fall: swipe down / Down key while airborne — drop quickly to land sooner.
+// Fast-fall: airborne only — drop quickly and land standing.
 function fastFall() {
-  if (phase !== STATE.RUNNING) return;
   const p = game.player;
   const res = applyFastFall(p, CONFIG);
   if (!res) return;
   p.vy = res.vy;
   audio.slide();
+}
+
+// Tap / swipe up: boost in the air, stand up if sitting, otherwise jump.
+function primaryAction() {
+  if (phase !== STATE.RUNNING) return;
+  const p = game.player;
+  if (!p.onGround) airBoost();
+  else if (p.sitting) standUp();
+  else jump();
+}
+
+// Swipe down: fast-fall in the air, otherwise sit down on the ground.
+function downAction() {
+  if (phase !== STATE.RUNNING) return;
+  if (!game.player.onGround) fastFall();
+  else sitDown();
 }
 
 // The game-over splash appears after a short freeze; until it does, restarts
@@ -374,20 +387,16 @@ function onTouchEnd(e) {
   if (phase === STATE.OVER) return canRestart ? startGame() : undefined;
   if (phase === STATE.PAUSED) return;
 
-  if (!touchStart) return jump();
+  if (!touchStart) return primaryAction();
   const end = e.changedTouches && e.changedTouches[0];
   const dy = end ? end.clientY - touchStart.y : 0;
   const elapsed = performance.now() - touchStart.t;
-  const onGround = game.player.onGround;
-  if (elapsed < SWIPE_TIME && dy < -SWIPE_DIST) {
-    // Swipe up: mid-air boost (no-op on the ground).
-    airBoost();
-  } else if (elapsed < SWIPE_TIME && dy > SWIPE_DIST) {
-    // Swipe down: slide on the ground, fast-fall in the air.
-    if (onGround) slide();
-    else fastFall();
+  if (elapsed < SWIPE_TIME && dy > SWIPE_DIST) {
+    // Swipe down: sit on the ground, fast-fall in the air.
+    downAction();
   } else {
-    jump();
+    // Tap or swipe up: jump / boost / stand up.
+    primaryAction();
   }
   touchStart = null;
 }
@@ -398,12 +407,10 @@ function onKeyDown(e) {
     audio.init();
     if (phase === STATE.READY) startGame();
     else if (phase === STATE.OVER) { if (canRestart) startGame(); }
-    else if (game.player.onGround) jump();
-    else airBoost();
+    else primaryAction();
   } else if (e.code === 'ArrowDown' || e.code === 'KeyS') {
     e.preventDefault();
-    if (phase === STATE.RUNNING && !game.player.onGround) fastFall();
-    else slide();
+    downAction();
   } else if (e.code === 'KeyM') {
     toggleMute();
   }
