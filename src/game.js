@@ -411,7 +411,7 @@ function endRun(cause = 'fault') {
     localStorage.setItem(BEST_KEY, String(best));
   }
   el.finalDistance.textContent = dist + ' m';
-  el.finalEmber.textContent = String(game.ember);
+  el.finalEmber.textContent = '$ ' + game.ember; // match the in-run HUD's "$ N" wage readout
   el.bestDistance.textContent = best + ' m';
   el.newBest.style.display = isBest ? 'block' : 'none';
   // Brief delay so the hit/shake registers before the overlay. Guard the
