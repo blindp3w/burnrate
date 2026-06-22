@@ -17,12 +17,13 @@ no build step, and no runtime dependencies**. (The GitHub repo is still named `e
 
 ## Play
 
-- **Tap** anywhere to **jump** over red **firewall** gates.
+- **Tap** anywhere to **jump** over amber **firewall** gates.
 - **Swipe down** to **slide** under hanging **throttle bars** (fibre-optic cables).
 - Skim glowing money-green **wage tokens** — they bump your score *and* refill the **runway** meter.
 - The runway drains as you run (faster the harder you go). **Let it hit zero and you're shut down.**
   Crash into an obstacle and you fault. Distance is your score; best is saved locally.
 - Desktop testing: **Space / ↑** jump, **↓** slide, **M** mute.
+- A brief **controls card** appears on your first ever launch; dismiss it and it won't show again.
 
 ## Tech stack & why
 
