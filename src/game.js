@@ -452,9 +452,11 @@ let helpVisible = false;
 function dismissHelp() {
   if (!helpVisible) return;
   el.help.classList.add('hidden');
+  el.start.setAttribute('aria-hidden', 'false'); // re-expose the start screen to AT
   helpVisible = false;
   touchStart = null; // drop the dismissing gesture so it can't leak into the run
   localStorage.setItem(HELP_KEY, '1');
+  el.startBtn.focus?.(); // move focus onward to "Spin up"
 }
 
 function onTouchStart(e) {
@@ -613,6 +615,8 @@ function init() {
   if (localStorage.getItem(HELP_KEY) !== '1') {
     el.help.classList.remove('hidden');
     helpVisible = true;
+    el.start.setAttribute('aria-hidden', 'true'); // hide the screen behind the modal from AT
+    el.helpBtn.focus?.(); // land focus on the dialog's action (guarded for the Node harness)
   }
 
   checkOrientation();

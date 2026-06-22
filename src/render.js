@@ -3,9 +3,10 @@
 // and paints the compute-burn datacenter scene in layers, back to front.
 //
 // Theme: you are a rogue AI fleeing forward through a server hall. Falling code
-// rain and server racks recede behind a molten thermal CORE on the horizon; the
-// road is a circuit-board data-bus; wage tokens glow money-green; a hazard-red
+// rain and server racks recede behind an Outrun retrosun on the horizon; the
+// road is a circuit-board laser-grid; wage tokens glow money-green; a hazard-red
 // shutdown front eats the floor behind you and flares as your runway empties.
+// A bloom + chromatic-aberration + CRT post pass ties it together.
 //
 // Coordinate mapping: pure logic lives in WORLD units (see logic.js). The
 // `view` carries a `scale` (= cssHeight / WORLD.height) so world (wx, wy) maps
@@ -19,8 +20,6 @@ import { WORLD, CONFIG, BARRIER } from './logic.js';
 const SKY_TOP = '#05070f'; // near-black server-hall ceiling
 const SKY_MID = '#0a1320'; // deep teal-indigo
 const SKY_LOW = '#10242f'; // teal haze rising toward the core
-const CORE = '#ff7a2c'; // molten thermal compute (the AI core on the horizon)
-const CORE_HOT = '#ffe1ad'; // hottest center of the core
 const CODE_GREEN = '57,255,158'; // terminal code-rain (rgb triplet)
 const CIRCUIT = '91,232,255'; // cyan circuit traces (rgb triplet)
 const TOKEN = '93,255,138'; // money-green wage tokens (rgb triplet)
@@ -28,7 +27,6 @@ const AMBER = '255,176,32'; // firewall gate — amber "jump over" hazard (rgb t
 const HAZARD = '255,45,79'; // shutdown front / danger red (rgb triplet)
 const SILHOUETTE = '#04070e'; // racks / towers — near-black, cool
 const RIM = 'rgba(120,230,255,0.9)'; // cyan rim (the slide-under affordance)
-const RIM_WARM = 'rgba(255,150,90,0.95)'; // thermal rim
 // Outrun/synthwave accents — the retrosun gradient + horizon magenta.
 const SUN_HOT = '255,242,214'; // white-hot sun center (rgb triplet)
 const SUN_MID = '255,138,46'; // amber sun body
