@@ -11,14 +11,18 @@
 import { WORLD, CONFIG, BARRIER } from './logic.js';
 
 // Palette --------------------------------------------------------------------
-const SKY_TOP = '#160b2e';
-const SKY_MID = '#2c1142';
-const SKY_LOW = '#5e1a55';
-const MAGENTA = '#ff2e88';
-const MAGENTA_SOFT = '#ff6fb0';
-const EMBER = '#ffd28c';
-const EMBER_HOT = '#ff9a4d';
-const SILHOUETTE = '#0b0617';
+// Tuned for readability in bright ambient light: lifted background midtones and
+// brighter accents so the high-contrast silhouettes/rims pop outdoors.
+const SKY_TOP = '#3c2278';
+const SKY_MID = '#642e9a';
+const SKY_LOW = '#bb3f92';
+const MAGENTA = '#ff3d93';
+const MAGENTA_SOFT = '#ff86bd';
+const EMBER = '#ffe0a6';
+const EMBER_HOT = '#ffa85c';
+const SILHOUETTE = '#160b28'; // not pure black, so it reads against the sky
+const RIM = 'rgba(120,230,255,0.9)'; // cool rim light for foreground edges
+const RIM_WARM = 'rgba(255,170,205,0.9)';
 
 function mulberry32(seed) {
   return function () {
@@ -159,7 +163,7 @@ export class Renderer {
     const vpX = w * 0.5;
     const bottom = view.h;
     ctx.save();
-    ctx.strokeStyle = 'rgba(255,90,170,0.28)';
+    ctx.strokeStyle = 'rgba(255,120,195,0.42)';
     ctx.lineWidth = 1.5;
 
     // Converging longitudinal lines.
@@ -178,8 +182,8 @@ export class Renderer {
       const t = (i + scroll) / 22; // 0 at horizon, 1 at bottom
       const ease = t * t; // denser near horizon
       const y = horizonY + ease * (bottom - horizonY);
-      const alpha = 0.06 + ease * 0.28;
-      ctx.strokeStyle = `rgba(255,110,176,${alpha})`;
+      const alpha = 0.1 + ease * 0.4;
+      ctx.strokeStyle = `rgba(255,140,200,${alpha})`;
       ctx.beginPath();
       ctx.moveTo(0, y);
       ctx.lineTo(w, y);
@@ -217,13 +221,13 @@ export class Renderer {
 
   _road(ctx, w, h, groundY) {
     const g = ctx.createLinearGradient(0, groundY, 0, h);
-    g.addColorStop(0, 'rgba(40,12,46,0.9)');
-    g.addColorStop(1, '#0b0617');
+    g.addColorStop(0, 'rgba(74,28,78,0.95)');
+    g.addColorStop(1, '#1a0d2e');
     ctx.fillStyle = g;
     ctx.fillRect(0, groundY, w, h - groundY);
     // The lit edge of the road catching the Emberline.
-    ctx.fillStyle = 'rgba(255,90,160,0.5)';
-    ctx.fillRect(0, groundY - 2, w, 2.5);
+    ctx.fillStyle = 'rgba(255,130,190,0.75)';
+    ctx.fillRect(0, groundY - 2, w, 3);
   }
 
   _motes(ctx, view, motes, time) {
@@ -257,10 +261,13 @@ export class Renderer {
     for (const o of obstacles) {
       const x = o.x * s;
       if (o.type === BARRIER) {
-        // Low rubble: a jagged dark mound.
+        // Low rubble: a jagged mound with a warm-lit face and bright top edge.
         const bw = CONFIG.barrierWidth * s;
         const bh = CONFIG.barrierHeight * s;
-        ctx.fillStyle = SILHOUETTE;
+        const grad = ctx.createLinearGradient(x, groundY - bh, x, groundY);
+        grad.addColorStop(0, '#3a1a44');
+        grad.addColorStop(1, SILHOUETTE);
+        ctx.fillStyle = grad;
         ctx.beginPath();
         ctx.moveTo(x, groundY);
         ctx.lineTo(x + bw * 0.15, groundY - bh * 0.7);
@@ -270,23 +277,32 @@ export class Renderer {
         ctx.lineTo(x + bw, groundY);
         ctx.closePath();
         ctx.fill();
-        // faint warm rim from the horizon glow behind
-        ctx.strokeStyle = 'rgba(255,90,150,0.35)';
-        ctx.lineWidth = 1.5;
+        // Bright warning rim so the obstacle reads instantly.
+        ctx.strokeStyle = RIM_WARM;
+        ctx.lineWidth = 2.5;
         ctx.stroke();
       } else {
         // Overpass / cables: a beam hanging from the top with droop cables.
         const ow = CONFIG.overpassWidth * s;
         const beamBottom = groundY - CONFIG.overpassGap * s;
         const beamTop = beamBottom - CONFIG.overpassThickness * s;
-        ctx.fillStyle = SILHOUETTE;
+        const grad = ctx.createLinearGradient(x, beamTop, x, beamBottom);
+        grad.addColorStop(0, SILHOUETTE);
+        grad.addColorStop(1, '#3a1a44');
+        ctx.fillStyle = grad;
         ctx.fillRect(x, 0, ow, beamBottom); // pillar up to the top of screen
-        // Highlight the underside edge.
-        ctx.strokeStyle = 'rgba(255,90,150,0.35)';
+        // Bright underside edge — the part you must slide beneath.
+        ctx.strokeStyle = RIM;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(x, beamBottom);
+        ctx.lineTo(x + ow, beamBottom);
+        ctx.stroke();
+        ctx.strokeStyle = RIM_WARM;
         ctx.lineWidth = 1.5;
         ctx.strokeRect(x, beamTop, ow, CONFIG.overpassThickness * s);
         // Drooping cables beneath
-        ctx.strokeStyle = 'rgba(20,12,30,0.9)';
+        ctx.strokeStyle = 'rgba(120,230,255,0.5)';
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(x, beamBottom);
@@ -322,32 +338,40 @@ export class Renderer {
     ctx.arc(lanternX, lanternY, w * 2.6, 0, Math.PI * 2);
     ctx.fill();
 
-    // Silhouette body.
+    // Silhouette body with a bright cool rim so it reads against the sky.
     ctx.fillStyle = SILHOUETTE;
+    ctx.strokeStyle = RIM;
+    ctx.lineJoin = 'round';
     if (player.sliding) {
       // Low crouched dash.
       this._roundRect(ctx, x, top, w * 1.25, h, 6);
       ctx.fill();
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
     } else {
       // Torso
       this._roundRect(ctx, x + w * 0.18, top + h * 0.22, w * 0.6, h * 0.6, 5);
       ctx.fill();
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
       // Head
       ctx.beginPath();
       ctx.arc(cx, top + h * 0.13, h * 0.12, 0, Math.PI * 2);
       ctx.fill();
-      // Running legs (animated stride).
+      ctx.stroke();
+      // Running legs (animated stride) — lit so they stay visible.
       const stride = running ? Math.sin(time * 16) : 0;
-      ctx.lineWidth = w * 0.16;
+      ctx.lineWidth = w * 0.18;
       ctx.lineCap = 'round';
-      ctx.strokeStyle = SILHOUETTE;
+      ctx.strokeStyle = '#3a2350';
       ctx.beginPath();
       ctx.moveTo(cx, top + h * 0.78);
       ctx.lineTo(cx - w * 0.25 + stride * w * 0.5, bottom);
       ctx.moveTo(cx, top + h * 0.78);
       ctx.lineTo(cx + w * 0.25 - stride * w * 0.5, bottom);
       ctx.stroke();
-      // Trailing arm with the lantern point.
+      // Trailing arm with the lantern point (warm-lit).
+      ctx.strokeStyle = RIM_WARM;
       ctx.lineWidth = w * 0.13;
       ctx.beginPath();
       ctx.moveTo(cx, top + h * 0.4);
@@ -380,16 +404,16 @@ export class Renderer {
   _creepingDark(ctx, w, h, darkness) {
     // The dark eats the road from the trailing (left) edge; it reaches further
     // as speed (darkness) rises.
-    const reach = (0.18 + darkness * 0.32) * w;
+    const reach = (0.12 + darkness * 0.26) * w;
     const g = ctx.createLinearGradient(0, 0, reach, 0);
-    g.addColorStop(0, `rgba(2,1,8,${0.85})`);
-    g.addColorStop(0.6, `rgba(4,2,12,${0.5 * (0.5 + darkness)})`);
-    g.addColorStop(1, 'rgba(4,2,12,0)');
+    g.addColorStop(0, `rgba(4,2,12,${0.55 + darkness * 0.25})`);
+    g.addColorStop(0.55, `rgba(6,3,16,${0.3 * (0.5 + darkness)})`);
+    g.addColorStop(1, 'rgba(6,3,16,0)');
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, reach, h);
     // A few wispy tendrils.
     ctx.save();
-    ctx.globalAlpha = 0.4 + darkness * 0.4;
+    ctx.globalAlpha = 0.25 + darkness * 0.35;
     ctx.fillStyle = '#020108';
     for (let i = 0; i < 5; i++) {
       const ty = (i + 0.5) / 5;
@@ -403,9 +427,9 @@ export class Renderer {
   }
 
   _vignette(ctx, w, h) {
-    const g = ctx.createRadialGradient(w / 2, h / 2, h * 0.3, w / 2, h / 2, h * 0.9);
+    const g = ctx.createRadialGradient(w / 2, h / 2, h * 0.45, w / 2, h / 2, h * 0.95);
     g.addColorStop(0, 'rgba(0,0,0,0)');
-    g.addColorStop(1, 'rgba(0,0,0,0.45)');
+    g.addColorStop(1, 'rgba(0,0,0,0.24)');
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, w, h);
   }
