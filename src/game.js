@@ -254,7 +254,15 @@ function slide() {
   }
 }
 
+// The game-over splash appears after a short freeze; until it does, restarts
+// are disabled so a tap during the freeze can't skip the score screen or race
+// the delayed reveal (which used to pop the splash over a fresh run).
+let gameoverTimer = null;
+let canRestart = false;
+
 function startGame() {
+  if (gameoverTimer) { clearTimeout(gameoverTimer); gameoverTimer = null; }
+  canRestart = false;
   audio.init();
   game = freshGame();
   phase = STATE.RUNNING;
@@ -271,6 +279,7 @@ function endRun() {
   resumePhase = STATE.OVER;
   game.running = false;
   game.shake = 20;
+  canRestart = false;
   audio.hit();
   audio.stopSwell();
 
@@ -284,8 +293,15 @@ function endRun() {
   el.finalEmber.textContent = String(game.ember);
   el.bestDistance.textContent = best + ' m';
   el.newBest.style.display = isBest ? 'block' : 'none';
-  // Brief delay so the hit/shake registers before the overlay.
-  setTimeout(() => el.gameover.classList.remove('hidden'), 420);
+  // Brief delay so the hit/shake registers before the overlay. Guard the
+  // reveal in case a restart already happened during the freeze.
+  if (gameoverTimer) clearTimeout(gameoverTimer);
+  gameoverTimer = setTimeout(() => {
+    gameoverTimer = null;
+    if (phase !== STATE.OVER) return;
+    el.gameover.classList.remove('hidden');
+    canRestart = true;
+  }, 420);
 }
 
 function syncHud() {
@@ -313,7 +329,7 @@ function onTouchEnd(e) {
   e.preventDefault();
 
   if (phase === STATE.READY) return startGame();
-  if (phase === STATE.OVER) return startGame();
+  if (phase === STATE.OVER) return canRestart ? startGame() : undefined;
   if (phase === STATE.PAUSED) return;
 
   if (!touchStart) return jump();
@@ -332,7 +348,8 @@ function onKeyDown(e) {
   if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
     e.preventDefault();
     audio.init();
-    if (phase === STATE.READY || phase === STATE.OVER) startGame();
+    if (phase === STATE.READY) startGame();
+    else if (phase === STATE.OVER) { if (canRestart) startGame(); }
     else jump();
   } else if (e.code === 'ArrowDown' || e.code === 'KeyS') {
     e.preventDefault();
