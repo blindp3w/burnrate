@@ -32,6 +32,7 @@ import { Audio } from './audio.js';
 
 const BEST_KEY = 'burnrate.best';
 const DAYLIGHT_KEY = 'burnrate.glare';
+const HELP_KEY = 'burnrate.help'; // '1' once the first-launch controls card is dismissed
 
 // --- DOM ---------------------------------------------------------------------
 const canvas = document.getElementById('game');
@@ -49,6 +50,8 @@ const el = {
   hud: document.getElementById('hud'),
   start: document.getElementById('start'),
   startBtn: document.getElementById('startBtn'),
+  help: document.getElementById('help'), // first-launch controls card
+  helpBtn: document.getElementById('helpBtn'),
   gameover: document.getElementById('gameover'),
   gameoverTitle: document.getElementById('gameoverTitle'),
   restartBtn: document.getElementById('restartBtn'),
@@ -443,6 +446,17 @@ let touchStart = null;
 const SWIPE_DIST = 28; // px downward to count as a slide
 const SWIPE_TIME = 400; // ms
 
+// First-launch controls card. While it's up, the first tap/key dismisses it
+// (instead of starting the run) so a new player actually reads it once.
+let helpVisible = false;
+function dismissHelp() {
+  if (!helpVisible) return;
+  el.help.classList.add('hidden');
+  helpVisible = false;
+  touchStart = null; // drop the dismissing gesture so it can't leak into the run
+  localStorage.setItem(HELP_KEY, '1');
+}
+
 function onTouchStart(e) {
   // First gesture also unlocks audio.
   audio.init();
@@ -456,6 +470,9 @@ function onTouchEnd(e) {
   // Ignore taps on the HUD buttons (handled separately).
   if (e.target === el.mute || e.target === el.daylight) return;
   e.preventDefault();
+
+  // First tap dismisses the controls card rather than starting the run.
+  if (helpVisible) { dismissHelp(); return; }
 
   if (phase === STATE.READY) return startGame();
   if (phase === STATE.OVER) return canRestart ? startGame() : undefined;
@@ -478,6 +495,12 @@ function onTouchEnd(e) {
 function onKeyDown(e) {
   // Ignore auto-repeat so holding a key can't spam actions or eat the air boost.
   if (e.repeat) return;
+  // While the controls card is up, a move/start key dismisses it first.
+  if (helpVisible && ['Space', 'ArrowUp', 'KeyW', 'ArrowDown', 'KeyS'].includes(e.code)) {
+    e.preventDefault();
+    dismissHelp();
+    return;
+  }
   if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
     e.preventDefault();
     audio.init();
@@ -581,8 +604,16 @@ function init() {
 
   el.startBtn.addEventListener('click', startGame);
   el.restartBtn.addEventListener('click', startGame);
+  el.helpBtn.addEventListener('click', (e) => { e.stopPropagation(); dismissHelp(); });
   el.mute.addEventListener('click', (e) => { e.stopPropagation(); toggleMute(); });
   el.daylight.addEventListener('click', (e) => { e.stopPropagation(); toggleDaylight(); });
+
+  // First ever load: reveal the controls card on top of the start screen. Done
+  // before checkOrientation() so a portrait first-load still paints #rotate above it.
+  if (localStorage.getItem(HELP_KEY) !== '1') {
+    el.help.classList.remove('hidden');
+    helpVisible = true;
+  }
 
   checkOrientation();
   registerSW();

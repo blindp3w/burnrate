@@ -204,6 +204,54 @@ body.daylight #game {
 .hint.subtle { opacity: 0.55; font-size: clamp(11px, 2vh, 14px); }
 .kbd-hint { opacity: 0.6; font-size: 0.85em; }
 
+/* First-launch controls card: one row per core move. */
+.controls {
+  list-style: none;
+  padding: 0;
+  margin: 4px 0;
+  width: 100%;
+  max-width: 460px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.controls li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px; /* comfortable tap/scan target */
+}
+.ctrl-key {
+  flex: none;
+  min-width: 84px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #04121a;
+  background: linear-gradient(180deg, var(--magenta-soft), var(--magenta));
+  box-shadow: 0 0 14px rgba(91, 232, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  text-align: center;
+}
+.ctrl-alt {
+  flex: none;
+  opacity: 0.6;
+  font-size: 0.85em;
+  color: #9fc7d6;
+}
+.ctrl-desc {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  color: #9fc7d6;
+  font-size: clamp(12px, 2.4vh, 17px);
+  line-height: 1.4;
+}
+/* On very short landscape viewports the desktop legend crowds the row — drop it. */
+@media (max-height: 380px) {
+  .ctrl-alt { display: none; }
+}
+
 .cta {
   margin-top: 6px;
   padding: 14px 34px;
