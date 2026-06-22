@@ -319,7 +319,7 @@ export class Renderer {
     const w = player.width * s;
     const standH = CONFIG.standHeight * s;
     const slideH = CONFIG.slideHeight * s;
-    const h = player.sliding ? slideH : standH;
+    const h = player.sitting ? slideH : standH;
     const bottom = groundY - (player.jumpOffset || 0) * s;
     const top = bottom - h;
     const cx = x + w / 2;
@@ -342,7 +342,7 @@ export class Renderer {
     ctx.fillStyle = SILHOUETTE;
     ctx.strokeStyle = RIM;
     ctx.lineJoin = 'round';
-    if (player.sliding) {
+    if (player.sitting) {
       // Low crouched dash.
       this._roundRect(ctx, x, top, w * 1.25, h, 6);
       ctx.fill();
